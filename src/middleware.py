@@ -14,6 +14,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         """Log requests with an ID, status, and duration."""
 
         request_id = uuid.uuid4().hex[:8]
+        request.state.request_id = request_id
         start_time = time.perf_counter()
 
         try:

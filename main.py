@@ -3,12 +3,14 @@ import json
 import logging
 import pandas as pd
 
-from src.middleware import RequestLoggingMiddleware
 from pathlib import Path
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 
-from src import DatasetInfo, DatasetStorage, HealthResponse, setup_logging
-from src.models import ProcessConfig, ProcessingReport
+from src import (
+    DatasetInfo, DatasetStorage, HealthResponse,
+    ProcessConfig, ProcessingReport,
+    RequestLoggingMiddleware, setup_logging,
+)
 from data_pipeline import (
     process_data,
     validate_dataframe,
@@ -173,7 +175,8 @@ def process_dataset(dataset_id: int, config: ProcessConfig):
 
     logger.info(
         f"Processed dataset: id={dataset_id}, "
-        f"rows_before={original_rows}, "
+        f"validation_removed={validation_rows_removed}, "
+        f"rows_before={len(validated_df)}, "
         f"rows_after={len(cleaned_df)}"
     )
 
