@@ -4,52 +4,43 @@ import uuid
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger(__name__)
 
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        """Log requests with an ID, status, and duration."""
+async def log_requests(request: Request, call_next):
+    """Log one request and attach its request ID to the response."""
+    request_id = uuid.uuid4().hex[:8]
+    request.state.request_id = request_id
+    started = time.perf_counter()
 
-        request_id = uuid.uuid4().hex[:8]
-        request.state.request_id = request_id
-        start_time = time.perf_counter()
-
-        try:
-            response = await call_next(request)
-        except Exception:
-            logger.error(
-                f"Unhandled exception | Request ID: {request_id} | "
-                f"Method: {request.method} | Path: {request.url.path}",
-                exc_info=True
-            )
-            response = JSONResponse(
-                status_code=500,
-                content={"detail": "Internal server error"}
-            )
-
-        duration_ms = (time.perf_counter() - start_time) * 1000
-
-        status_code = response.status_code
-
-        if status_code >= 500:
-            log_level = logging.ERROR
-        elif status_code >= 400:
-            log_level = logging.WARNING
-        else:
-            log_level = logging.INFO
-
-        logger.log(
-            log_level,
-            f"Request ID: {request_id} | "
-            f"Method: {request.method} | "
-            f"Path: {request.url.path} | "
-            f"Status: {status_code} | "
-            f"Duration: {duration_ms:.2f}ms"
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.error(
+            f"Unhandled exception | request_id={request_id}",
+            exc_info=True,
+        )
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
         )
 
-        response.headers["X-Request-ID"] = request_id
+    duration_ms = (time.perf_counter() - started) * 1000
 
-        return response
+    message = (
+        f"request_id={request_id} "
+        f"{request.method} {request.url.path} "
+        f"status={response.status_code} "
+        f"duration={duration_ms:.2f}ms"
+    )
+
+    if response.status_code >= 500:
+        logger.error(message)
+    elif response.status_code >= 400:
+        logger.warning(message)
+    else:
+        logger.info(message)
+
+    response.headers["X-Request-ID"] = request_id
+    return response

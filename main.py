@@ -1,3 +1,4 @@
+from src import log_requests
 import io
 import json
 import logging
@@ -9,7 +10,7 @@ from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from src import (
     DatasetInfo, DatasetStorage, HealthResponse,
     ProcessConfig, ProcessingReport,
-    RequestLoggingMiddleware, setup_logging,
+    setup_logging,
 )
 from data_pipeline import (
     process_data,
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Data Processing API", version="1.0.0")
 
-app.add_middleware(RequestLoggingMiddleware)
+app.middleware("http")(log_requests)
 
 storage = DatasetStorage()
 
