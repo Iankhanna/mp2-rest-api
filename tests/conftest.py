@@ -43,8 +43,7 @@ def processing_body():
             "required_columns": ["student_id", "score"],
             "numeric_columns": ["score"]
         },
-        "processing": {
-            "remove_duplicates": True,
+        "processing": {            "remove_duplicates": True,
             "missing": {
                 "enabled": True,
                 "axis": "rows"
@@ -57,25 +56,3 @@ def processing_body():
             }
         }
     }
-
-def test_upload_csv(client, sample_csv_bytes):
-    """Check that the sample CSV uploads correctly."""
-    response = client.post(
-        "/upload",
-        files={
-            "file": (
-                "sample_data.csv",
-                sample_csv_bytes,
-                "text/csv"
-            )
-        }
-    )
-
-    assert response.status_code == 200
-
-    data = response.json()
-
-    assert data["rows"] == 6
-    assert data["columns"] == 2
-    assert isinstance(data["id"], int)
-    assert data["id"] > 0
